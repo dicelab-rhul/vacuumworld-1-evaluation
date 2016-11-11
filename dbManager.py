@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class DBManager:
     def __init__(self, hostname, port, db_name, states_collection, actions_collection):
