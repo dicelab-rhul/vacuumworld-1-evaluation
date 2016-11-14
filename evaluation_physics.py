@@ -63,11 +63,11 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         if action.get_kwargs()["strategy_name"] == "linear":
             for a in actions:
                 if a["cycle_action"]["action"] in vw_actions.physical:
-                    if a["cycle_action"]["outcome"] == "ACTION_DONE":
+                    if a["cycle_action"]["outcome"] == succeeded:
                         cost += action.get_kwargs()["successful_physical_coefficient"]
-                    elif a["cycle_action"]["outcome"] == "ACTION_IMPOSSIBLE":
+                    elif a["cycle_action"]["outcome"] == impossible:
                         cost += action.get_kwargs()["impossible_physical_coefficient"]
-                    elif a["cycle_action"]["outcome"] == "ACTION_FAILED":
+                    elif a["cycle_action"]["outcome"] == failed:
                         cost += action.get_kwargs()["failed_physical_coefficient"]
 
         self.__manager.close_connection()
