@@ -1,5 +1,7 @@
 from outcomes import *
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluationResult:
     def __init__(self, score, outcome, body_id):

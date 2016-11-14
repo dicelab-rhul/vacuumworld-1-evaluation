@@ -1,5 +1,6 @@
 from pymongo import MongoClient
-from mongo_keywords import action_key, count_key
+from mongo_keywords import *
+from outcomes import *
 
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
@@ -54,44 +55,44 @@ class DBManager:
         return self.__states_collection.find()
 
     def get_state_for_specific_cycle(self, cycle_number):
-        return self.__states_collection.find_one({"cycle": int(cycle_number)})
+        return self.__states_collection.find_one({cycle_key: int(cycle_number)})
 
     def get_actions_reports_for_all_cycles(self):
         return self.__actions_collection.find()
 
     def get_all_actors_actions_in_specific_cycle(self, cycle_number):
         return self.__actions_collection.find_one(
-            filter={"cycle": int(cycle_number)},
-            projection={"_id": 0, "cycle": 1, "actors_number": 1, "actions": 1}
+            filter={cycle_key: int(cycle_number)},
+            projection={id_key: 0, cycle_key: 1, actors_number_key: 1, actions_key: 1}
         )
 
     def get_specific_actor_action_in_specific_cycle(self, cycle_number, actor_id):
         return self.__actions_collection.find_one(
-            filter={"cycle": int(cycle_number)},
-            projection={"_id": 0, "actions": {"$elemMatch": {"actor_id": actor_id}}}
+            filter={cycle_key: int(cycle_number)},
+            projection={id_key: 0, actions_key: {"$elemMatch": {actor_id_key: actor_id}}}
         )["actions"][0]
 
     def get_specific_actor_actions_in_all_cycles(self, actor_id):
         return self.__actions_collection.aggregate(
             pipeline=[
-                {"$project": {"_id": 0, "actions": 1, "cycle": 1}},
-                {"$unwind": "$actions"},
-                {"$match": {"actions.actor_id": actor_id}},
-                {"$group": {"_id": "$cycle", action_key: {"$push": "$actions"}}},
-                {"$sort": {"_id": 1}},
-                {"$project": {"_id": 0, action_key: 1}},
+                {"$project": {id_key: 0, actions_key: 1, cycle_key: 1}},
+                {"$unwind": "$" + actions_key},
+                {"$match": {actions_key + "." + actor_id_key: actor_id}},
+                {"$group": {id_key: cycle_key, action_key: {"$push": "$" + actions_key}}},
+                {"$sort": {id_key: 1}},
+                {"$project": {id_key: 0, action_key: 1}},
                 {"$unwind": "$" + action_key}
             ]
         )
 
     def get_actors_names(self):
-        return [value["_id"] for value in
+        return [value[id_key] for value in
                 self.__actions_collection.aggregate(
                     pipeline=[
-                        {"$match": {"cycle": 1}},
-                        {"$project": {"_id": 0, "actions.actor_id": 1}},
-                        {"$unwind": "$actions"},
-                        {"$group": {"_id": "$actions.actor_id"}}
+                        {"$match": {cycle_key: 1}},
+                        {"$project": {id_key: 0, actions_key + "." + actor_id_key: 1}},
+                        {"$unwind": "$" + actions_key},
+                        {"$group": {id_key: "$" + actions_key + "." + actor_id_key}}
                     ]
                 )
                 ]
@@ -99,65 +100,77 @@ class DBManager:
     def count_specific_actor_successful_actions_in_all_cycles(self, actor_id):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_DONE"}},
-                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {
+                                    actions_key + "." + actor_id_key: actor_id,
+                                    actions_key + "." + action_outcome_key: succeeded
+                }
+                },
+                {"$group": {id_key: "$" + actor_id_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]
 
     def count_specific_actor_impossible_actions_in_all_cycles(self, actor_id):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_IMPOSSIBLE"}},
-                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {
+                                    actions_key + "." + actor_id_key: actor_id,
+                                    actions_key + "." + action_outcome_key: impossible
+                }
+                },
+                {"$group": {id_key: "$" + actor_id_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]
 
     def count_specific_actor_failed_actions_in_all_cycles(self, actor_id):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_FAILED"}},
-                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {
+                                    actions_key + "." + actor_id_key: actor_id,
+                                    actions_key + "." + action_outcome_key: failed
+                }
+                },
+                {"$group": {id_key: "$" + actor_id_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]
 
     def count_number_of_successful_actions_in_specific_cycle(self, cycle_number):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_DONE"}},
-                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {cycle_key: cycle_number, actions_key + "." + action_outcome_key: succeeded}},
+                {"$group": {id_key: "$" + cycle_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]
 
     def count_number_of_impossible_actions_in_specific_cycle(self, cycle_number):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_IMPOSSIBLE"}},
-                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {cycle_key: cycle_number, actions_key + "." + action_outcome_key: impossible}},
+                {"$group": {id_key: "$" + cycle_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]
 
     def count_number_of_failed_actions_in_specific_cycle(self, cycle_number):
         for result in self.__actions_collection.aggregate(
             pipeline=[
-                {"$unwind": "$actions"},
-                {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_FAILED"}},
-                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
-                {"$project": {"_id": 0, count_key: 1}}
+                {"$unwind": "$" + actions_key},
+                {"$match": {cycle_key: cycle_number, actions_key + "." + action_outcome_key: failed}},
+                {"$group": {id_key: "$" + cycle_key, count_key: {"$sum": 1}}},
+                {"$project": {id_key: 0, count_key: 1}}
             ]
         ):
-            return result["count"]
+            return result[count_key]

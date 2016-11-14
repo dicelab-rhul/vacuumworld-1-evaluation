@@ -4,6 +4,8 @@ import evaluate_action as eva
 import evaluation_environment as ee
 import evaluator_body as eb
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluatorActuator(coe.CustomObservable, cor.CustomObserver):
     def __init__(self):

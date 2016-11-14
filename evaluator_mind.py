@@ -4,6 +4,8 @@ import evaluate_action as eva
 import evaluator_brain as ebr
 import result as r
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluatorMind(coe.CustomObservable, cor.CustomObserver):
     def __init__(self, body_id):

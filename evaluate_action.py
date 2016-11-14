@@ -4,6 +4,8 @@ import result as r
 
 from outcomes import *
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluateAction:
     def __init__(self, body_id, **kwargs):

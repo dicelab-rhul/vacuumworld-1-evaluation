@@ -1,3 +1,6 @@
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
+
 def print_states_for_all_cycles(manager):
     print "##########"
     print "States for every cycle:\n"

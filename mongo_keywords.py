@@ -1,8 +1,12 @@
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 id_key = "_id"
+actions_key = "actions"
 action_key = "action"
 count_key = "count"
 cycle_key = "cycle"
 actor_id_key = "actor_id"
+actors_number_key = "actors_number"
 
 action_name_key = "action"
 action_outcome_key = "outcome"

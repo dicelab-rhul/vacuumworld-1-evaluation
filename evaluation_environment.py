@@ -6,6 +6,8 @@ import evaluator_actuator as ea
 import evaluator_sensor as es
 import result as r
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluationEnvironment(coe.CustomObservable, cor.CustomObserver):
     def __init__(self, bodies):

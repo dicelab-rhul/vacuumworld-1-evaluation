@@ -1,5 +1,7 @@
 import custom_observer
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class CustomObservable:
     def __init__(self):

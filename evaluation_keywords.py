@@ -1,5 +1,8 @@
 from mongo_keywords import turn_left, turn_right, move, clean, perceive, speak, drop_dirt
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
+
 physical = [turn_left, turn_right, move, clean, drop_dirt]
 sensing = [perceive]
 communication = [speak]

@@ -11,6 +11,8 @@ from pymongo.errors import PyMongoError
 from db_manager import DBManager
 from outcomes import *
 
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
 
 class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhysics):
     def __init__(self):
@@ -50,6 +52,8 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         try:
             return self.__evaluate(evaluate_action)
         except PyMongoError:
+            self.__manager.close_connection()
+
             return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
 
     def __evaluate(self, action):
@@ -58,31 +62,85 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         actors = self.__manager.get_actors_names()
         actor_to_evaluate_index = action.get_kwargs()[ekw.actor_to_evaluate_key]
 
+        return self.__evaluate_helper(action, actors, actor_to_evaluate_index)
+
+    def __evaluate_helper(self, action, actors, actor_to_evaluate_index):
         if len(actors) > actor_to_evaluate_index:
-            actions = self.__manager.get_specific_actor_actions_in_all_cycles(
-                self.__manager.get_actors_names()[actor_to_evaluate_index]
-            )
-
-            cost = 0
-
-            if action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
-                for a in actions:
-                    if a[mkw.action_key][mkw.action_name_key] in ekw.physical:
-                        if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
-                            cost += action.get_kwargs()[ekw.successful_physical_coefficient_key]
-                        elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
-                            cost += action.get_kwargs()[ekw.impossible_physical_coefficient_key]
-                        elif a[mkw.action_key][mkw.action_outcome_key] == failed:
-                            cost += action.get_kwargs()[ekw.failed_physical_coefficient_key]
-
+            return self.__do_actual_evaluation(action, actors, actor_to_evaluate_index)
+        else:
             self.__manager.close_connection()
 
-            return r.EvaluationResult(cost, succeeded, action.get_body_id())
-        else:
             return r.EvaluationResult(None, failed, action.get_body_id())
+
+    def __do_actual_evaluation(self, action, actors, actor_to_evaluate_index):
+        actions = self.__manager.get_specific_actor_actions_in_all_cycles(actors[actor_to_evaluate_index])
+
+        return self.__evaluate_by_strategy(action, actions)
+
+    def __evaluate_by_strategy(self, action, actions):
+        if action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
+            return self.__evaluate_with_linear_strategy(action, actions)
+        else:  # todo: for now only the linear strategy is implemented
+            self.__manager.close_connection()
+
+            return r.EvaluationResult(None, failed, action.get_body_id())
+
+    def __evaluate_with_linear_strategy(self, action, actions):
+        cost = 0
+
+        for a in actions:
+            cost += _update_cost(action, a)
+
+        self.__manager.close_connection()
+
+        return r.EvaluationResult(cost, succeeded, action.get_body_id())
 
     def succeeded(self, evaluate_action, context):
         if isinstance(evaluate_action, eva.EvaluateAction) and isinstance(context, ee.EvaluationEnvironment):
             return self.__succeeded[eva.EvaluateAction]
         else:
             return False
+
+
+def _update_cost(action, a):
+    if a[mkw.action_key][mkw.action_name_key] in ekw.physical:
+        return __add_cost_for_physical_action_with_linear_strategy(action, a)
+    elif a[mkw.action_key][mkw.action_name_key] in ekw.sensing:
+        return __add_cost_for_sensing_action_with_linear_strategy(action, a)
+    elif a[mkw.action_key][mkw.action_name_key] in ekw.communication:
+        return __add_cost_for_communication_action_with_linear_strategy(action, a)
+    else:
+        raise ValueError("Unrecognized action name: " + a[mkw.action_key][mkw.action_name_key] + ".")
+
+
+def __add_cost_for_physical_action_with_linear_strategy(action, a):
+    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return action.get_kwargs()[ekw.successful_physical_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return action.get_kwargs()[ekw.impossible_physical_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
+        return action.get_kwargs()[ekw.failed_physical_coefficient_key]
+    else:
+        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")
+
+
+def __add_cost_for_sensing_action_with_linear_strategy(action, a):
+    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return action.get_kwargs()[ekw.successful_sensing_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return action.get_kwargs()[ekw.impossible_sensing_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
+        return action.get_kwargs()[ekw.failed_sensing_coefficient_key]
+    else:
+        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")
+
+
+def __add_cost_for_communication_action_with_linear_strategy(action, a):
+    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return action.get_kwargs()[ekw.successful_communication_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return action.get_kwargs()[ekw.impossible_communication_coefficient_key]
+    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
+        return action.get_kwargs()[ekw.failed_communication_coefficient_key]
+    else:
+        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")

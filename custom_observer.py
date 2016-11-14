@@ -1,3 +1,6 @@
+__author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
+
+
 class CustomObserver:
     def __init__(self):
         pass
