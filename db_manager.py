@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
+
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
 
