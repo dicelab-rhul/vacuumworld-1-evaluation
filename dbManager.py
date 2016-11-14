@@ -28,7 +28,7 @@ class DBManager:
             self.__client = None
             self.__database = None
             self.__states_collection = None
-            self.__actions_collection = Nones
+            self.__actions_collection = None
 
     def get_hostname(self):
         return self.__hostname
@@ -54,11 +54,11 @@ class DBManager:
     def get_actions_reports_for_all_cycles(self):
         return self.__actions_collection.find()
 
-    def get_actions_report_for_specific_cycle(self, cycle_number):
-        return self.__actions_collection.find_one({"cycle": int(cycle_number)})
-
     def get_all_actors_actions_in_specific_cycle(self, cycle_number):
-        return self.__actions_collection.find_one(filter={"cycle": int(cycle_number)})
+        return self.__actions_collection.find_one(
+            filter={"cycle": int(cycle_number)},
+            projection={"_id": 0, "cycle": 1, "actors_number": 1, "actions": 1}
+        )
 
     def get_specific_actor_action_in_specific_cycle(self, cycle_number, actor_id):
         return self.__actions_collection.find_one(
