@@ -1,4 +1,4 @@
-from custom_observer import CustomObserver
+import custom_observer
 
 
 class CustomObservable:
@@ -6,7 +6,7 @@ class CustomObservable:
         self.__observers = []
 
     def add_observer(self, observer):
-        if not isinstance(observer, CustomObserver):
+        if not isinstance(observer, custom_observer.CustomObserver):
             raise ValueError("Illegal observer class: " + str(type(observer)) + ".")
         else:
             self.__add_observer_if_needed(observer)
@@ -23,7 +23,7 @@ class CustomObservable:
         return self.__observers
 
     def get_specific_type_observers(self, specific_class):
-        return [x for x in self.__observers and isinstance(x, specific_class)]
+        return [x for x in self.__observers if isinstance(x, specific_class)]
 
     def notify_observers(self, payload):
         for observer in self.__observers:

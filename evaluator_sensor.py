@@ -1,26 +1,26 @@
-from custom_observer import CustomObserver
-from custom_observable import CustomObservable
-from evaluator_body import EvaluatorBody
-from evaluation_environment import EvaluationEnvironment
-from actions.result import EvaluationResult
+import custom_observable as coe
+import custom_observer as cor
+import evaluation_environment as ee
+import evaluator_body as eb
+import result as r
 
 
-class EvaluatorSensor(CustomObservable, CustomObserver):
+class EvaluatorSensor(coe.CustomObservable, cor.CustomObserver):
     def __init__(self, body_id):
-        CustomObservable.__init__(self)
+        coe.CustomObservable.__init__(self)
         self.__body_id = body_id
 
     def get_body_id(self):
         return self.__body_id
 
-    def update(self, custom_observable, payload):
-        if isinstance(custom_observable, EvaluationEnvironment):
+    def update(self, observable, payload):
+        if isinstance(observable, ee.EvaluationEnvironment):
             self.__manage_environment_request(payload)
         else:
-            raise ValueError("Unexpected observable type: " + str(type(custom_observable)) + ".")
+            raise ValueError("Unexpected observable type: " + str(type(observable)) + ".")
 
     def __manage_environment_request(self, payload):
-        if isinstance(payload, EvaluationResult):
-            self.notify_specific_type_observers(payload, EvaluatorBody)
+        if isinstance(payload, r.EvaluationResult):
+            self.notify_specific_type_observers(payload, eb.EvaluatorBody)
         else:
             raise ValueError("Unexpected payload type: " + str(type(payload)) + ".")

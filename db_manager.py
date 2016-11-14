@@ -17,7 +17,7 @@ class DBManager:
         self.__actions_collection = self.__database[self.__actions_collection_name]
 
     def reopen_connection(self):
-        if self.__client.server_info() is None:
+        if self.__client is None:
             self.__client = MongoClient("mongodb://" + self.__hostname + ":" + self.__port)
             self.__database = self.__client[self.__db_name]
             self.__states_collection = self.__database[self.__states_collection_name]

@@ -1,6 +1,7 @@
-from evaluation_environment import EvaluationEnvironment
-from evaluation_physics import EvaluationPhysics
-from result import EvaluationResult
+import evaluation_environment as ee
+import evaluation_physics as ep
+import result as r
+
 from outcomes import *
 
 
@@ -16,7 +17,7 @@ class EvaluateAction:
         return self.__kwargs
 
     def __is_possible(self, physics, context):
-        if isinstance(physics, EvaluationPhysics) and isinstance(context, EvaluationEnvironment):
+        if isinstance(physics, ep.EvaluationPhysics) and isinstance(context, ee.EvaluationEnvironment):
             return physics.is_possible(self, context)
         else:
             return False
@@ -32,22 +33,22 @@ class EvaluateAction:
             else:
                 raise ValueError("Unexpected result: " + str(result.get_outcome()) + ".")
         else:
-            return EvaluationResult(None, impossible, self.__body_id)
+            return r.EvaluationResult(None, impossible, self.__body_id)
 
     def __check_post_conditions(self, result, physics, context):
         if self.__succeeded(physics, context):
             return result
         else:
-            return EvaluationResult(None, failed, self.__body_id)
+            return r.EvaluationResult(None, failed, self.__body_id)
 
     def __perform(self, physics, context):
-        if isinstance(physics, EvaluationPhysics) and isinstance(context, EvaluationEnvironment):
+        if isinstance(physics, ep.EvaluationPhysics) and isinstance(context, ee.EvaluationEnvironment):
             return physics.perform(self, context)
         else:
-            return EvaluationResult(None, impossible, self.__body_id)
+            return r.EvaluationResult(None, impossible, self.__body_id)
 
     def __succeeded(self, physics, context):
-        if isinstance(physics, EvaluationPhysics) and isinstance(context, EvaluationEnvironment):
+        if isinstance(physics, ep.EvaluationPhysics) and isinstance(context, ee.EvaluationEnvironment):
             return physics.succeeded(self, context)
         else:
             return False
