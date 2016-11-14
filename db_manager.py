@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-
+from mongo_keywords import action_key, count_key
 
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
@@ -77,10 +77,10 @@ class DBManager:
                 {"$project": {"_id": 0, "actions": 1, "cycle": 1}},
                 {"$unwind": "$actions"},
                 {"$match": {"actions.actor_id": actor_id}},
-                {"$group": {"_id": "$cycle", "cycle_action": {"$push": "$actions"}}},
+                {"$group": {"_id": "$cycle", action_key: {"$push": "$actions"}}},
                 {"$sort": {"_id": 1}},
-                {"$project": {"_id": 0, "cycle_action": 1}},
-                {"$unwind": "$cycle_action"}
+                {"$project": {"_id": 0, action_key: 1}},
+                {"$unwind": "$" + action_key}
             ]
         )
 
@@ -101,8 +101,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_DONE"}},
-                {"$group": {"_id": "$actor_id", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]
@@ -112,8 +112,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_IMPOSSIBLE"}},
-                {"$group": {"_id": "$actor_id", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]
@@ -123,8 +123,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"actions.actor_id": actor_id, "actions.outcome": "ACTION_FAILED"}},
-                {"$group": {"_id": "$actor_id", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$actor_id", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]
@@ -134,8 +134,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_DONE"}},
-                {"$group": {"_id": "$cycle", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]
@@ -145,8 +145,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_IMPOSSIBLE"}},
-                {"$group": {"_id": "$cycle", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]
@@ -156,8 +156,8 @@ class DBManager:
             pipeline=[
                 {"$unwind": "$actions"},
                 {"$match": {"cycle": cycle_number, "actions.outcome": "ACTION_FAILED"}},
-                {"$group": {"_id": "$cycle", "count": {"$sum": 1}}},
-                {"$project": {"_id": 0, "count": 1}}
+                {"$group": {"_id": "$cycle", count_key: {"$sum": 1}}},
+                {"$project": {"_id": 0, count_key: 1}}
             ]
         ):
             return result["count"]

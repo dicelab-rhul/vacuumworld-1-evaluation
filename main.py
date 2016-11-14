@@ -7,6 +7,7 @@ import evaluator_sensor as es
 import evaluator_actuator as ea
 import evaluation_environment as ee
 import evaluation_physics as ep
+import evaluation_keywords as ekw
 
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
@@ -34,17 +35,17 @@ def main():
     # no perceive on first cycle
 
     strategy = {
-        "actor_to_evaluate": 0,
-        "strategy_name": "linear",
-        "successful_physical_coefficient": 4,
-        "impossible_physical_coefficient": 10,
-        "failed_physical_coefficient": 10,
-        "successful_sensing_coefficient": 0,
-        "impossible_sensing_coefficient": 0,
-        "failed_sensing_coefficient": 0,
-        "successful_communication_coefficient": 0,
-        "impossible_communication_coefficient": 0,
-        "failed_communication_coefficient": 0,
+        ekw.actor_to_evaluate_key: 0,
+        ekw.strategy_name_key: ekw.linear_strategy,
+        ekw.successful_physical_coefficient_key: 4,
+        ekw.impossible_physical_coefficient_key: 10,
+        ekw.failed_physical_coefficient_key: 10,
+        ekw.successful_sensing_coefficient_key: 0,
+        ekw.impossible_sensing_coefficient_key: 0,
+        ekw.failed_sensing_coefficient_key: 0,
+        ekw.successful_communication_coefficient_key: 0,
+        ekw.impossible_communication_coefficient_key: 0,
+        ekw.failed_communication_coefficient_key: 0,
     }
 
     action = mind.decide(**strategy)
@@ -52,7 +53,7 @@ def main():
 
     # next cycle
     mind.perceive()
-    strategy["actor_to_evaluate"] += 1
+    strategy[ekw.actor_to_evaluate_key] += 1
     print str(mind.get_last_action_result().get_score())
     action = mind.decide(**strategy)
     mind.execute(action)

@@ -4,7 +4,8 @@ import evaluate_action as eva
 import evaluation_environment as ee
 import physics_interface as pi
 import result as r
-import actions as vw_actions
+import mongo_keywords as mkw
+import evaluation_keywords as ekw
 
 from pymongo.errors import PyMongoError
 from db_manager import DBManager
@@ -54,25 +55,31 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
     def __evaluate(self, action):
         self.__manager.reopen_connection()
 
-        actions = self.__manager.get_specific_actor_actions_in_all_cycles(
-            self.__manager.get_actors_names()[action.get_kwargs()["actor_to_evaluate"]]
-        )
+        actors = self.__manager.get_actors_names()
+        actor_to_evaluate_index = action.get_kwargs()[ekw.actor_to_evaluate_key]
 
-        cost = 0
+        if len(actors) > actor_to_evaluate_index:
+            actions = self.__manager.get_specific_actor_actions_in_all_cycles(
+                self.__manager.get_actors_names()[actor_to_evaluate_index]
+            )
 
-        if action.get_kwargs()["strategy_name"] == "linear":
-            for a in actions:
-                if a["cycle_action"]["action"] in vw_actions.physical:
-                    if a["cycle_action"]["outcome"] == succeeded:
-                        cost += action.get_kwargs()["successful_physical_coefficient"]
-                    elif a["cycle_action"]["outcome"] == impossible:
-                        cost += action.get_kwargs()["impossible_physical_coefficient"]
-                    elif a["cycle_action"]["outcome"] == failed:
-                        cost += action.get_kwargs()["failed_physical_coefficient"]
+            cost = 0
 
-        self.__manager.close_connection()
+            if action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
+                for a in actions:
+                    if a[mkw.action_key][mkw.action_name_key] in ekw.physical:
+                        if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
+                            cost += action.get_kwargs()[ekw.successful_physical_coefficient_key]
+                        elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
+                            cost += action.get_kwargs()[ekw.impossible_physical_coefficient_key]
+                        elif a[mkw.action_key][mkw.action_outcome_key] == failed:
+                            cost += action.get_kwargs()[ekw.failed_physical_coefficient_key]
 
-        return r.EvaluationResult(cost, failed, action.get_body_id())
+            self.__manager.close_connection()
+
+            return r.EvaluationResult(cost, succeeded, action.get_body_id())
+        else:
+            return r.EvaluationResult(None, failed, action.get_body_id())
 
     def succeeded(self, evaluate_action, context):
         if isinstance(evaluate_action, eva.EvaluateAction) and isinstance(context, ee.EvaluationEnvironment):
