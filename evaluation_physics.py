@@ -56,44 +56,44 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
 
             return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
 
-    def __evaluate(self, action):
+    def __evaluate(self, evaluate_action):
         self.__manager.reopen_connection()
 
         actors = self.__manager.get_actors_names()
-        actor_to_evaluate_index = action.get_kwargs()[ekw.actor_to_evaluate_key]
+        actor_to_evaluate_index = evaluate_action.get_kwargs()[ekw.actor_to_evaluate_key]
 
-        return self.__evaluate_helper(action, actors, actor_to_evaluate_index)
+        return self.__evaluate_helper(evaluate_action, actors, actor_to_evaluate_index)
 
-    def __evaluate_helper(self, action, actors, actor_to_evaluate_index):
+    def __evaluate_helper(self, evaluate_action, actors, actor_to_evaluate_index):
         if len(actors) > actor_to_evaluate_index:
-            return self.__do_actual_evaluation(action, actors, actor_to_evaluate_index)
+            return self.__do_actual_evaluation(evaluate_action, actors, actor_to_evaluate_index)
         else:
             self.__manager.close_connection()
 
-            return r.EvaluationResult(None, failed, action.get_body_id())
+            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
 
-    def __do_actual_evaluation(self, action, actors, actor_to_evaluate_index):
+    def __do_actual_evaluation(self, evaluate_action, actors, actor_to_evaluate_index):
         actions = self.__manager.get_specific_actor_actions_in_all_cycles(actors[actor_to_evaluate_index])
 
-        return self.__evaluate_by_strategy(action, actions)
+        return self.__evaluate_by_strategy(evaluate_action, actions)
 
-    def __evaluate_by_strategy(self, action, actions):
-        if action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
-            return self.__evaluate_with_linear_strategy(action, actions)
+    def __evaluate_by_strategy(self, evaluate_action, actions):
+        if evaluate_action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
+            return self.__evaluate_with_linear_strategy(evaluate_action, actions)
         else:  # todo: for now only the linear strategy is implemented
             self.__manager.close_connection()
 
-            return r.EvaluationResult(None, failed, action.get_body_id())
+            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
 
-    def __evaluate_with_linear_strategy(self, action, actions):
+    def __evaluate_with_linear_strategy(self, evaluate_action, actions):
         cost = 0
 
-        for a in actions:
-            cost += _update_cost(action, a)
+        for action in actions:
+            cost += _increment_cost_with_linear_strategy(evaluate_action, action)
 
         self.__manager.close_connection()
 
-        return r.EvaluationResult(cost, succeeded, action.get_body_id())
+        return r.EvaluationResult(cost, succeeded, evaluate_action.get_body_id())
 
     def succeeded(self, evaluate_action, context):
         if isinstance(evaluate_action, eva.EvaluateAction) and isinstance(context, ee.EvaluationEnvironment):
@@ -102,45 +102,45 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
             return False
 
 
-def _update_cost(action, a):
-    if a[mkw.action_key][mkw.action_name_key] in ekw.physical:
-        return __add_cost_for_physical_action_with_linear_strategy(action, a)
-    elif a[mkw.action_key][mkw.action_name_key] in ekw.sensing:
-        return __add_cost_for_sensing_action_with_linear_strategy(action, a)
-    elif a[mkw.action_key][mkw.action_name_key] in ekw.communication:
-        return __add_cost_for_communication_action_with_linear_strategy(action, a)
+def _increment_cost_with_linear_strategy(evaluate_action, action):
+    if action[mkw.action_key][mkw.action_name_key] in ekw.physical:
+        return __add_cost_for_physical_action_with_linear_strategy(evaluate_action, action)
+    elif action[mkw.action_key][mkw.action_name_key] in ekw.sensing:
+        return __add_cost_for_sensing_action_with_linear_strategy(evaluate_action, action)
+    elif action[mkw.action_key][mkw.action_name_key] in ekw.communication:
+        return __add_cost_for_communication_action_with_linear_strategy(evaluate_action, action)
     else:
-        raise ValueError("Unrecognized action name: " + a[mkw.action_key][mkw.action_name_key] + ".")
+        raise ValueError("Unrecognized action name: " + action[mkw.action_key][mkw.action_name_key] + ".")
 
 
-def __add_cost_for_physical_action_with_linear_strategy(action, a):
-    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return action.get_kwargs()[ekw.successful_physical_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return action.get_kwargs()[ekw.impossible_physical_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
-        return action.get_kwargs()[ekw.failed_physical_coefficient_key]
+def __add_cost_for_physical_action_with_linear_strategy(evaluate_action, action):
+    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return evaluate_action.get_kwargs()[ekw.successful_physical_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return evaluate_action.get_kwargs()[ekw.impossible_physical_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
+        return evaluate_action.get_kwargs()[ekw.failed_physical_coefficient_key]
     else:
-        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")
+        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")
 
 
-def __add_cost_for_sensing_action_with_linear_strategy(action, a):
-    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return action.get_kwargs()[ekw.successful_sensing_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return action.get_kwargs()[ekw.impossible_sensing_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
-        return action.get_kwargs()[ekw.failed_sensing_coefficient_key]
+def __add_cost_for_sensing_action_with_linear_strategy(evaluate_action, action):
+    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return evaluate_action.get_kwargs()[ekw.successful_sensing_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return evaluate_action.get_kwargs()[ekw.impossible_sensing_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
+        return evaluate_action.get_kwargs()[ekw.failed_sensing_coefficient_key]
     else:
-        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")
+        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")
 
 
-def __add_cost_for_communication_action_with_linear_strategy(action, a):
-    if a[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return action.get_kwargs()[ekw.successful_communication_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return action.get_kwargs()[ekw.impossible_communication_coefficient_key]
-    elif a[mkw.action_key][mkw.action_outcome_key] == failed:
-        return action.get_kwargs()[ekw.failed_communication_coefficient_key]
+def __add_cost_for_communication_action_with_linear_strategy(evaluate_action, action):
+    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
+        return evaluate_action.get_kwargs()[ekw.successful_communication_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
+        return evaluate_action.get_kwargs()[ekw.impossible_communication_coefficient_key]
+    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
+        return evaluate_action.get_kwargs()[ekw.failed_communication_coefficient_key]
     else:
-        raise ValueError("Unrecognized action outcome: " + a[mkw.action_key][mkw.action_outcome_key] + ".")
+        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")
