@@ -31,6 +31,10 @@ class DBManager:
             self.__states_collection = None
             self.__actions_collection = None
 
+    def reset_database(self):
+        self.__states_collection.remove({})
+        self.__actions_collection.remove({})
+
     def get_hostname(self):
         return self.__hostname
 
