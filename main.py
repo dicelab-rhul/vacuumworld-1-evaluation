@@ -65,7 +65,7 @@ def __parse_arguments():
     parser = ap.ArgumentParser(description='VacuumWorld Evaluator')
     parser.add_argument('-c', '--config-file',
                         required=True,
-                        metavar='string', type=str,
+                        metavar='<config-file-path>', type=str,
                         action='store',
                         help='JSON configuration file')
 
