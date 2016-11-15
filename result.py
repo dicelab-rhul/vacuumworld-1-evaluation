@@ -1,11 +1,9 @@
-from outcomes import *
-
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
 
 class EvaluationResult:
-    def __init__(self, score, outcome, body_id):
-        self.__possible_outcomes = [succeeded, impossible, failed]
+    def __init__(self, score, outcome, body_id, outcomes):
+        self.__possible_outcomes = outcomes
         self.__set_outcome(outcome)
         self.__score = score
         self.__body_id = body_id

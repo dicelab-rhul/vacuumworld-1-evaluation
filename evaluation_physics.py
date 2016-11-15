@@ -4,22 +4,21 @@ import evaluate_action as eva
 import evaluation_environment as ee
 import physics_interface as pi
 import result as r
-import mongo_keywords as mkw
-import evaluation_keywords as ekw
 
 from pymongo.errors import PyMongoError
 from db_manager import DBManager
-from outcomes import *
 
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
 
 class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhysics):
-    def __init__(self):
+    def __init__(self, mongo_vars, eval_vars):
         coe.CustomObservable.__init__(self)
         self.__possible = {eva.EvaluateAction: True}
         self.__succeeded = {eva.EvaluateAction: True}
-        self.__manager = DBManager("127.0.0.1", "27017", "VacuumWorld", "states", "actions")
+        self.__mongo_vars = mongo_vars
+        self.__eval_vars = eval_vars
+        self.__manager = DBManager(self.__mongo_vars, self.__eval_vars)
 
     def update(self, observable, payload):
         if isinstance(observable, ee.EvaluationEnvironment):
@@ -44,7 +43,8 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
 
     def perform(self, evaluate_action, context):
         if not isinstance(evaluate_action, eva.EvaluateAction) or not isinstance(context, ee.EvaluationEnvironment):
-            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
+                                      evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
         else:
             return self.__do_evaluation(evaluate_action)
 
@@ -54,13 +54,14 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         except PyMongoError:
             self.__manager.close_connection()
 
-            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
+                                      evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
     def __evaluate(self, evaluate_action):
         self.__manager.reopen_connection()
 
         actors = self.__manager.get_actors_names()
-        actor_to_evaluate_index = evaluate_action.get_kwargs()[ekw.actor_to_evaluate_key]
+        actor_to_evaluate_index = evaluate_action.get_kwargs()[self.__eval_vars.get_actor_to_evaluate_key()]
 
         return self.__evaluate_helper(evaluate_action, actors, actor_to_evaluate_index)
 
@@ -70,7 +71,8 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         else:
             self.__manager.close_connection()
 
-            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
+                                      evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
     def __do_actual_evaluation(self, evaluate_action, actors, actor_to_evaluate_index):
         actions = self.__manager.get_specific_actor_actions_in_all_cycles(actors[actor_to_evaluate_index])
@@ -78,69 +80,69 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         return self.__evaluate_by_strategy(evaluate_action, actions)
 
     def __evaluate_by_strategy(self, evaluate_action, actions):
-        if evaluate_action.get_kwargs()[ekw.strategy_name_key] == ekw.linear_strategy:
+        if evaluate_action.get_kwargs()[self.__eval_vars.get_strategy_name_key()] ==\
+                self.__eval_vars.get_linear_strategy_name():
+
             return self.__evaluate_with_linear_strategy(evaluate_action, actions)
         else:  # todo: for now only the linear strategy is implemented
             self.__manager.close_connection()
 
-            return r.EvaluationResult(None, failed, evaluate_action.get_body_id())
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
+                                      evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
     def __evaluate_with_linear_strategy(self, evaluate_action, actions):
         cost = 0
 
         for action in actions:
-            cost += _increment_cost_with_linear_strategy(evaluate_action, action)
+            cost += self.__increment_cost_with_linear_strategy(evaluate_action, action)
 
         self.__manager.close_connection()
 
-        return r.EvaluationResult(cost, succeeded, evaluate_action.get_body_id())
+        return r.EvaluationResult(cost, self.__mongo_vars.get_action_success_outcome_value(),
+                                  evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
+
+    def __increment_cost_with_linear_strategy(self, evaluate_action, action):
+        if action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_name_key()] in self.__eval_vars.get_physical_actions():
+            return self.__add_cost_for_physical_action_with_linear_strategy(evaluate_action, action)
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_name_key()] in self.__eval_vars.get_sensing_actions():
+            return self.__add_cost_for_sensing_action_with_linear_strategy(evaluate_action, action)
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_name_key()] in self.__eval_vars.get_communication_actions():
+            return self.__add_cost_for_communication_action_with_linear_strategy(evaluate_action, action)
+        else:
+            raise ValueError("Unrecognized action name: " + action[self.__mongo_vars.get_actions_report_action_outcome_key()][self.__mongo_vars.get_actions_report_action_name_key()] + ".")
+
+    def __add_cost_for_physical_action_with_linear_strategy(self, evaluate_action, action):
+        if action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_success_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_successful_ph_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_impossible_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_impossible_ph_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_failed_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_failed_ph_cost_key()]
+        else:
+            raise ValueError("Unrecognized action outcome: " + action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] + ".")
+
+    def __add_cost_for_sensing_action_with_linear_strategy(self, evaluate_action, action):
+        if action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_success_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_successful_sen_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_impossible_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_impossible_sen_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_failed_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_failed_sen_cost_key()]
+        else:
+            raise ValueError("Unrecognized action outcome: " + action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] + ".")
+
+    def __add_cost_for_communication_action_with_linear_strategy(self, evaluate_action, action):
+        if action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_success_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_successful_com_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_impossible_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_impossible_com_cost_key()]
+        elif action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] == self.__mongo_vars.get_action_failed_outcome_value():
+            return evaluate_action.get_kwargs()[self.__eval_vars.get_failed_com_cost_key()]
+        else:
+            raise ValueError("Unrecognized action outcome: " + action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_outcome_key()] + ".")
 
     def succeeded(self, evaluate_action, context):
         if isinstance(evaluate_action, eva.EvaluateAction) and isinstance(context, ee.EvaluationEnvironment):
             return self.__succeeded[eva.EvaluateAction]
         else:
             return False
-
-
-def _increment_cost_with_linear_strategy(evaluate_action, action):
-    if action[mkw.action_key][mkw.action_name_key] in ekw.physical:
-        return __add_cost_for_physical_action_with_linear_strategy(evaluate_action, action)
-    elif action[mkw.action_key][mkw.action_name_key] in ekw.sensing:
-        return __add_cost_for_sensing_action_with_linear_strategy(evaluate_action, action)
-    elif action[mkw.action_key][mkw.action_name_key] in ekw.communication:
-        return __add_cost_for_communication_action_with_linear_strategy(evaluate_action, action)
-    else:
-        raise ValueError("Unrecognized action name: " + action[mkw.action_key][mkw.action_name_key] + ".")
-
-
-def __add_cost_for_physical_action_with_linear_strategy(evaluate_action, action):
-    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return evaluate_action.get_kwargs()[ekw.successful_physical_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return evaluate_action.get_kwargs()[ekw.impossible_physical_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
-        return evaluate_action.get_kwargs()[ekw.failed_physical_coefficient_key]
-    else:
-        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")
-
-
-def __add_cost_for_sensing_action_with_linear_strategy(evaluate_action, action):
-    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return evaluate_action.get_kwargs()[ekw.successful_sensing_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return evaluate_action.get_kwargs()[ekw.impossible_sensing_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
-        return evaluate_action.get_kwargs()[ekw.failed_sensing_coefficient_key]
-    else:
-        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")
-
-
-def __add_cost_for_communication_action_with_linear_strategy(evaluate_action, action):
-    if action[mkw.action_key][mkw.action_outcome_key] == succeeded:
-        return evaluate_action.get_kwargs()[ekw.successful_communication_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == impossible:
-        return evaluate_action.get_kwargs()[ekw.impossible_communication_coefficient_key]
-    elif action[mkw.action_key][mkw.action_outcome_key] == failed:
-        return evaluate_action.get_kwargs()[ekw.failed_communication_coefficient_key]
-    else:
-        raise ValueError("Unrecognized action outcome: " + action[mkw.action_key][mkw.action_outcome_key] + ".")

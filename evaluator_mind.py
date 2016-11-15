@@ -8,9 +8,10 @@ __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
 
 class EvaluatorMind(coe.CustomObservable, cor.CustomObserver):
-    def __init__(self, body_id):
+    def __init__(self, body_id, mongo_vars):
         coe.CustomObservable.__init__(self)
         self.__body_id = body_id
+        self.__mongo_vars = mongo_vars
         self.__last_action_result = None
         self.__additional_results = []
 
@@ -26,7 +27,7 @@ class EvaluatorMind(coe.CustomObservable, cor.CustomObserver):
     def decide(self, **kwargs):
         kwargs["pippo"] = "pluto"  # todo
 
-        return eva.EvaluateAction(self.__body_id, **kwargs)
+        return eva.EvaluateAction(self.__body_id, self.__mongo_vars, **kwargs)
 
     def execute(self, action):
         if isinstance(action, eva.EvaluateAction):

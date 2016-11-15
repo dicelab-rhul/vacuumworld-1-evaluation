@@ -1,0 +1,203 @@
+{
+  "mongodb": {
+    "mongo_config": {
+      "mongodb": "mongodb",
+      "hostname": "127.0.0.1",
+      "port": "27017",
+      "db_name": "VacuumWorld",
+      "states_collection": "states",
+      "actions_collection": "actions"
+    },
+    "mongodb_keys": {
+      "actions_report_document_keys": {
+        "id_key": "_id",
+        "cycle_key": "cycle",
+        "actors_number_key": "actors_number",
+        "actions_key": "actions",
+        "action_sub_keys": {
+          "actor_id_key": "actor_id",
+          "action_name_key": "action",
+          "action_outcome_key": "outcome",
+          "actor_old_facing_direction_key": "actor_old_facing_direction",
+          "actor_new_facing_direction_key": "actor_new_facing_direction",
+          "actor_old_location_key": "actor_old_location",
+          "actor_new_location_key": "actor_new_location",
+          "perceived_locations_key": "perceived_locations",
+          "action_specific_sub_keys": {
+            "turn_left_action_keys": {
+              "turning_direction_key": "turning_direction"
+            },
+            "turn_right_action_keys": {
+              "turning_direction_key": "turning_direction"
+            },
+            "clean_action_keys": {
+              "cleaned_dirt_key": "cleaned_dirt"
+            },
+            "speech_action_keys": {
+              "speech_key": "speech",
+              "speech_sub_keys": {
+                "recipient_key": "recipient",
+                "message_key": "message"
+              }
+            },
+            "drop_dirt_action_keys": {
+              "dropped_dirt_key": "dropped_dirt"
+            }
+          }
+        }
+      },
+      "state_document_keys": {
+        "id_key": "_id",
+        "cycle_key": "cycle",
+        "size_key": "size",
+        "user_key": "user",
+        "locations_key": "locations",
+        "location_sub_keys": {
+          "x_key": "x",
+          "y_key": "y",
+          "on_north_key": "on_north",
+          "on_south_key": "on_south",
+          "on_west_key": "on_west",
+          "on-east_key": "on_east",
+          "agent_key": "agent",
+          "agent_sub_keys": {
+            "id_key": "id",
+            "name_key": "name",
+            "mind_key": "mind",
+            "brain_key": "brain",
+            "sensors_key": "sensors",
+            "sensor_sub_keys": {
+              "id_key": "id",
+              "purpose_key": "purpose"
+            },
+            "actuators_key": "actuators",
+            "actuator_sub_keys": {
+              "id_key": "id",
+              "purpose_key": "purpose"
+            }
+          },
+          "dirt_key": "dirt",
+          "dirt_sub_keys": {
+            "color_key": "color",
+            "in_initial_state_key": "in_initial_state",
+            "dropped_in_cycle_key": "dropped_in_cycle"
+          }
+        }
+      },
+      "aggregations_keys": {
+        "id_key": "_id",
+        "count_key": "count",
+        "action_key": "action"
+      }
+    },
+    "mongodb_values": {
+      "action_values": {
+        "names": {
+          "turn_left": "uk.ac.rhul.cs.dice.vacuumworld.actions.TurnLeftAction",
+          "turn_right": "uk.ac.rhul.cs.dice.vacuumworld.actions.TurnRightAction",
+          "move": "uk.ac.rhul.cs.dice.vacuumworld.actions.MoveAction",
+          "clean": "uk.ac.rhul.cs.dice.vacuumworld.actions.CleanAction",
+          "perceive": "uk.ac.rhul.cs.dice.vacuumworld.actions.PerceiveAction",
+          "speak": "uk.ac.rhul.cs.dice.vacuumworld.actions.SpeechAction",
+          "drop_dirt": "uk.ac.rhul.cs.dice.vacuumworld.actions.DropDirtAction"
+        },
+        "outcomes": [
+          "ACTION_DONE",
+          "ACTION_IMPOSSIBLE",
+          "ACTION_FAILED"
+        ],
+        "facing_direction_values": {
+          "north": "NORTH",
+          "south": "SOUTH",
+          "west": "WEST",
+          "east": "EAST"
+        },
+        "turning_direction_values": {
+          "left": "LEFT",
+          "right": "RIGHT"
+        },
+        "dropped_dirt_values": {
+          "green": "GREEN",
+          "orange": "ORANGE",
+          "neutral": "neutral"
+        },
+        "speech_values": {
+          "default_broadcasting_message": "Hello everyone!!!"
+        }
+      },
+      "state_values": {
+        "user_values": {
+          "user_present": true,
+          "user_absent": false
+        },
+        "location_values": {
+          "border_values": {
+            "normal": "NORMAL",
+            "wall": "WALL"
+          },
+          "agent_values": {
+            "sensor_values": {
+              "seeing": "SEEING",
+              "listening": "LISTENING",
+              "undefined": "UNDEFINED"
+            },
+            "actuators_values": {
+              "physical": "PHYSICAL",
+              "speaking": "SPEAKING",
+              "undefined": "UNDEFINED"
+            }
+          },
+          "dirt_values": {
+            "green": "GREEN",
+            "orange": "ORANGE",
+            "neutral": "neutral",
+            "in_initial_state": true,
+            "not_in_initial_state": false
+          }
+        }
+      }
+    }
+  },
+  "evaluation_strategy": {
+    "evaluation_strategy_keys": {
+      "strategy_name_key": "strategy_name",
+      "actor_to_evaluate_key": "actor_to_evaluate",
+      "successful_physical_coefficient_key": "successful_physical_coefficient",
+      "impossible_physical_coefficient_key": "impossible_physical_coefficient",
+      "failed_physical_coefficient_key": "failed_physical_coefficient",
+      "successful_sensing_coefficient_key": "successful_sensing_coefficient",
+      "impossible_sensing_coefficient_key": "impossible_sensing_coefficient",
+      "failed_sensing_coefficient_key": "failed_sensing_coefficient",
+      "successful_communication_coefficient_key": "successful_communication_coefficient",
+      "impossible_communication_coefficient_key": "impossible_communication_coefficient",
+      "failed_communication_coefficient_key": "failed_communication_coefficient"
+    },
+    "evaluation_strategy_values": {
+      "physical_actions": [
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.TurnLeftAction",
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.TurnRightAction",
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.MoveAction",
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.CleanAction",
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.DropDirtAction"
+      ],
+      "sensing_actions": [
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.PerceiveAction"
+      ],
+      "communication_actions": [
+        "uk.ac.rhul.cs.dice.vacuumworld.actions.SpeechAction"
+      ],
+      "linear_strategy": {
+        "strategy_name": "linear_strategy",
+        "successful_physical_coefficient": 4,
+        "impossible_physical_coefficient": 10,
+        "failed_physical_coefficient": 0,
+        "successful_sensing_coefficient": 0,
+        "impossible_sensing_coefficient": 0,
+        "failed_sensing_coefficient": 0,
+        "successful_communication_coefficient": 0,
+        "impossible_communication_coefficient": 0,
+        "failed_communication_coefficient": 0
+      }
+    }
+  }
+}

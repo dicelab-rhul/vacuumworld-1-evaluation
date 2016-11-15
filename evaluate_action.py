@@ -2,14 +2,13 @@ import evaluation_environment as ee
 import evaluation_physics as ep
 import result as r
 
-from outcomes import *
-
 __author__ = "cloudstrife9999, A.K.A. Emanuele Uliana"
 
 
 class EvaluateAction:
-    def __init__(self, body_id, **kwargs):
+    def __init__(self, body_id, mongo_vars, **kwargs):
         self.__body_id = body_id
+        self.__mongo_vars = mongo_vars
         self.__kwargs = kwargs
 
     def get_body_id(self):
@@ -35,19 +34,22 @@ class EvaluateAction:
             else:
                 raise ValueError("Unexpected result: " + str(result.get_outcome()) + ".")
         else:
-            return r.EvaluationResult(None, impossible, self.__body_id)
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_impossible_outcome_value(),
+                                      self.__body_id, self.__mongo_vars.get_action_outcomes_values())
 
     def __check_post_conditions(self, result, physics, context):
         if self.__succeeded(physics, context):
             return result
         else:
-            return r.EvaluationResult(None, failed, self.__body_id)
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
+                                      self.__body_id, self.__mongo_vars.get_action_outcomes_values())
 
     def __perform(self, physics, context):
         if isinstance(physics, ep.EvaluationPhysics) and isinstance(context, ee.EvaluationEnvironment):
             return physics.perform(self, context)
         else:
-            return r.EvaluationResult(None, impossible, self.__body_id)
+            return r.EvaluationResult(None, self.__mongo_vars.get_action_impossible_outcome_value(),
+                                      self.__body_id, self.__mongo_vars.get_action_outcomes_values())
 
     def __succeeded(self, physics, context):
         if isinstance(physics, ep.EvaluationPhysics) and isinstance(context, ee.EvaluationEnvironment):
