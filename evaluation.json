@@ -188,15 +188,15 @@
       ],
       "linear_strategy": {
         "strategy_name": "linear_strategy",
-        "successful_physical_coefficient": 4,
-        "impossible_physical_coefficient": 10,
-        "failed_physical_coefficient": 0,
-        "successful_sensing_coefficient": 0,
-        "impossible_sensing_coefficient": 0,
-        "failed_sensing_coefficient": 0,
-        "successful_communication_coefficient": 0,
-        "impossible_communication_coefficient": 0,
-        "failed_communication_coefficient": 0
+        "successful_physical_coefficient": 1,
+        "impossible_physical_coefficient": 2,
+        "failed_physical_coefficient": 1,
+        "successful_sensing_coefficient": 0.25,
+        "impossible_sensing_coefficient": 0.5,
+        "failed_sensing_coefficient": 0.25,
+        "successful_communication_coefficient": 0.5,
+        "impossible_communication_coefficient": 1,
+        "failed_communication_coefficient": 0.5
       }
     }
   }
