@@ -75,26 +75,52 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
                                       evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
     def __do_actual_evaluation(self, evaluate_action, actors, actor_to_evaluate_index):
-        actions = self.__manager.get_specific_actor_actions_in_all_cycles(actors[actor_to_evaluate_index])
+        cycle_limit = evaluate_action.get_kwargs()["cycle_limit"]
+        actions = self.__manager.get_specific_actor_actions_in_all_cycles_until_limit(actors[actor_to_evaluate_index], cycle_limit)
 
-        return self.__evaluate_by_strategy(evaluate_action, actions)
+        return self.__evaluate_by_strategy(evaluate_action, actions, actors[actor_to_evaluate_index], cycle_limit)
 
-    def __evaluate_by_strategy(self, evaluate_action, actions):
+    def __evaluate_by_strategy(self, evaluate_action, actions, actor_id, cycle_limit):
         if evaluate_action.get_kwargs()[self.__eval_vars.get_strategy_name_key()] ==\
                 self.__eval_vars.get_linear_strategy_name():
 
-            return self.__evaluate_with_linear_strategy(evaluate_action, actions)
+            stage = int(evaluate_action.get_kwargs()["stage"])
+
+            return self.__evaluate_with_linear_strategy(evaluate_action, actions, actor_id, stage, cycle_limit)
         else:  # todo: for now only the linear strategy is implemented
             self.__manager.close_connection()
 
             return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
                                       evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
-    def __evaluate_with_linear_strategy(self, evaluate_action, actions):
+    def __evaluate_with_linear_strategy(self, evaluate_action, actions, actor_id, stage, cycle_limit):
         cost = 0
 
         for action in actions:
             cost += self.__increment_cost_with_linear_strategy(evaluate_action, action)
+
+        print actor_id + ": actions cost: " + str(cost)
+
+        if stage == 1:
+            missed_locations = self.__manager.count_number_of_missed_locations(actor_id, cycle_limit)
+            print actor_id + ": missed locations cost: " + str(missed_locations)
+            cost += missed_locations
+        elif stage == 2:
+            delta = self.__manager.get_dirts_number_at_cycle(cycle_limit)
+
+            print actor_id + ": dirts delta cost: " + str(delta)
+            cost += delta
+            # todo: remove unfair actions costs
+        elif stage == 3:
+            delta = 0
+
+            for counter in range(cycle_limit + 1):
+                dirts_before = self.__manager.get_dirts_number_at_cycle(counter)
+                dirts_after = self.__manager.get_dirts_number_at_cycle(counter + 1)
+                delta += dirts_after - dirts_before
+
+            print actor_id + ": dirts delta cost: " + str(delta)
+            cost += delta
 
         self.__manager.close_connection()
 

@@ -38,11 +38,17 @@ class MongoVariables:
     def get_actions_report_action_name_key(self):
         return self.get_actions_report_action_sub_keys()["action_name_key"]
 
+    def get_actions_report_perceived_locations_key(self):
+        return self.get_actions_report_action_sub_keys()["perceived_locations_key"]
+
     def get_state_keys(self):
         return self.__mongo_vars_dict["mongodb_keys"]["state_document_keys"]
 
     def get_state_cycle_key(self):
         return self.__mongo_vars_dict["mongodb_keys"]["state_document_keys"]["cycle_key"]
+
+    def get_state_size_key(self):
+        return self.__mongo_vars_dict["mongodb_keys"]["state_document_keys"]["size_key"]
 
     def get_state_location_keys(self):
         return self.__mongo_vars_dict["mongodb_keys"]["state_document_keys"]["location_sub_keys"]
@@ -64,6 +70,9 @@ class MongoVariables:
 
     def get_aggregations_action_key(self):
         return self.__mongo_vars_dict["mongodb_keys"]["aggregations_keys"]["action_key"]
+
+    def get_aggregations_locations_key(self):
+        return self.__mongo_vars_dict["mongodb_keys"]["aggregations_keys"]["locations_key"]
 
     def get_mongodb_values(self):
         return self.__mongo_vars_dict["mongodb_values"]

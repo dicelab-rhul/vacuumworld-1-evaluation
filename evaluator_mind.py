@@ -25,8 +25,6 @@ class EvaluatorMind(coe.CustomObservable, cor.CustomObserver):
         self.notify_specific_type_observers(None, ebr.EvaluatorBrain)
 
     def decide(self, **kwargs):
-        kwargs["pippo"] = "pluto"  # todo
-
         return eva.EvaluateAction(self.__body_id, self.__mongo_vars, **kwargs)
 
     def execute(self, action):

@@ -55,6 +55,9 @@ class DBManager:
     def get_states_for_all_cycles(self):
         return self.__states_collection.find()
 
+    def get_states_for_all_cycles_until_limit(self, cycle_limit):
+        return self.__states_collection.find({"cycle": {"$lt": cycle_limit + 1}})
+
     def get_state_for_specific_cycle(self, cycle_number):
         return self.__states_collection.find_one({self.__mongo_vars.get_state_cycle_key(): int(cycle_number)})
 
@@ -100,6 +103,51 @@ class DBManager:
                     "$match": {
                         self.__mongo_vars.get_actions_report_actions_key() + "." +
                         self.__mongo_vars.get_actions_report_action_actor_id_key(): actor_id
+                    }
+                },
+                {
+                    "$group": {
+                        self.__mongo_vars.get_aggregations_id_key(): self.__mongo_vars.get_actions_report_cycle_key(),
+                        self.__mongo_vars.get_aggregations_action_key(): {
+                            "$push": "$" + self.__mongo_vars.get_actions_report_actions_key()
+                        }
+                    }
+                },
+                {
+                    "$sort": {
+                        self.__mongo_vars.get_aggregations_id_key(): 1
+                    }
+                },
+                {
+                    "$project": {
+                        self.__mongo_vars.get_aggregations_id_key(): 0,
+                        self.__mongo_vars.get_aggregations_action_key(): 1
+                    }
+                },
+                {
+                    "$unwind": "$" + self.__mongo_vars.get_aggregations_action_key()
+                }
+            ]
+        )
+
+    def get_specific_actor_actions_in_all_cycles_until_limit(self, actor_id, cycle_limit):
+        return self.__actions_collection.aggregate(
+            pipeline=[
+                {
+                    "$project": {
+                        self.__mongo_vars.get_actions_report_id_key(): 0,
+                        self.__mongo_vars.get_actions_report_actions_key(): 1,
+                        self.__mongo_vars.get_actions_report_cycle_key(): 1
+                    }
+                },
+                {
+                    "$unwind": "$" + self.__mongo_vars.get_actions_report_actions_key()
+                },
+                {
+                    "$match": {
+                        self.__mongo_vars.get_actions_report_actions_key() + "." +
+                        self.__mongo_vars.get_actions_report_action_actor_id_key(): actor_id,
+                        self.__mongo_vars.get_actions_report_cycle_key(): {"$lt": cycle_limit + 1}
                     }
                 },
                 {
@@ -357,3 +405,73 @@ class DBManager:
             ]
         ):
             return result[self.__mongo_vars.get_aggregations_count_key()]
+
+    def count_number_of_missed_locations(self, actor_id, cycle_limit):
+        grid_size = self.__states_collection.find_one()[self.__mongo_vars.get_state_size_key()]
+        locations_to_check = []
+
+        for i in range(grid_size):
+            for j in range(grid_size):
+                locations_to_check.append("(" + str(i) + ", " + str(j) + ")")
+
+        perceived_locations = self.__actions_collection.aggregate(
+                pipeline=[
+                    {
+                        "$unwind": "$" + self.__mongo_vars.get_actions_report_actions_key()
+                    },
+                    {
+                        "$match": {
+                                self.__mongo_vars.get_actions_report_actions_key() + "." +
+                                self.__mongo_vars.get_actions_report_action_actor_id_key(): actor_id,
+                                self.__mongo_vars.get_actions_report_cycle_key(): {"$lt": cycle_limit + 1}
+                        }
+                    },
+                    {
+                        "$unwind": "$" + self.__mongo_vars.get_actions_report_actions_key() + "."
+                        + self.__mongo_vars.get_actions_report_perceived_locations_key()
+                    },
+                    {
+                        "$unwind": "$" + self.__mongo_vars.get_actions_report_actions_key() + "."
+                        + self.__mongo_vars.get_actions_report_perceived_locations_key()
+                    },
+                    {
+                        "$group": {
+                            self.__mongo_vars.get_aggregations_id_key(): None,
+                            self.__mongo_vars.get_aggregations_locations_key(): {
+                                "$addToSet": "$" + self.__mongo_vars.get_actions_report_actions_key() + "."
+                                + self.__mongo_vars.get_actions_report_perceived_locations_key()
+                            }
+                        }
+                    },
+                    {
+                        "$project": {
+                            self.__mongo_vars.get_aggregations_id_key(): 0,
+                            self.__mongo_vars.get_aggregations_locations_key(): 1
+                        }
+
+                    }
+                ]
+        )
+
+        for perceived_location in perceived_locations:
+            locations = perceived_location[self.__mongo_vars.get_aggregations_locations_key()]
+
+            for location in locations:
+                if location in locations_to_check:
+                    locations_to_check.remove(location)
+
+        return len(locations_to_check)
+
+    def get_dirts_number_at_cycle(self, cycle):
+        counter = 0
+
+        results = self.__states_collection.aggregate(
+            pipeline=[
+                {"$match": {"cycle": cycle}}, {"$unwind": "$locations"}, {"$match": {"locations.dirt": {"$exists": True}}}
+            ]
+        )
+
+        for _ in results:
+            counter += 1
+
+        return counter

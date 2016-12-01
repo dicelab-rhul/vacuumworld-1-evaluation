@@ -87,7 +87,8 @@
       "aggregations_keys": {
         "id_key": "_id",
         "count_key": "count",
-        "action_key": "action"
+        "action_key": "action",
+        "locations_key": "locations"
       }
     },
     "mongodb_values": {
