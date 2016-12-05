@@ -61,40 +61,35 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         self.__manager.reopen_connection()
 
         actors = self.__manager.get_actors_names()
-        actor_to_evaluate_index = evaluate_action.get_kwargs()[self.__eval_vars.get_actor_to_evaluate_key()]
+        actor_id = evaluate_action.get_kwargs()[self.__eval_vars.get_actor_to_evaluate_key()]
 
-        return self.__evaluate_helper(evaluate_action, actors, actor_to_evaluate_index)
+        if actor_id not in actors:
+            raise ValueError()
 
-    def __evaluate_helper(self, evaluate_action, actors, actor_to_evaluate_index):
-        if len(actors) > actor_to_evaluate_index:
-            return self.__do_actual_evaluation(evaluate_action, actors, actor_to_evaluate_index)
-        else:
-            self.__manager.close_connection()
+        return self.__do_actual_evaluation(evaluate_action, actor_id)
 
-            return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
-                                      evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
-
-    def __do_actual_evaluation(self, evaluate_action, actors, actor_to_evaluate_index):
+    def __do_actual_evaluation(self, evaluate_action, actor_id):
         cycle_limit = evaluate_action.get_kwargs()["cycle_limit"]
-        actions = self.__manager.get_specific_actor_actions_in_all_cycles_until_limit(actors[actor_to_evaluate_index], cycle_limit)
 
-        return self.__evaluate_by_strategy(evaluate_action, actions, actors[actor_to_evaluate_index], cycle_limit)
+        return self.__evaluate_by_strategy(evaluate_action, actor_id, cycle_limit)
 
-    def __evaluate_by_strategy(self, evaluate_action, actions, actor_id, cycle_limit):
+    def __evaluate_by_strategy(self, evaluate_action, actor_id, cycle_limit):
         if evaluate_action.get_kwargs()[self.__eval_vars.get_strategy_name_key()] ==\
                 self.__eval_vars.get_linear_strategy_name():
 
             stage = int(evaluate_action.get_kwargs()["stage"])
 
-            return self.__evaluate_with_linear_strategy(evaluate_action, actions, actor_id, stage, cycle_limit)
+            return self.__evaluate_with_linear_strategy(evaluate_action, actor_id, stage, cycle_limit)
         else:  # todo: for now only the linear strategy is implemented
             self.__manager.close_connection()
 
             return r.EvaluationResult(None, self.__mongo_vars.get_action_failed_outcome_value(),
                                       evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
 
-    def __evaluate_with_linear_strategy(self, evaluate_action, actions, actor_id, stage, cycle_limit):
+    def __evaluate_with_linear_strategy(self, evaluate_action, actor_id, stage, cycle_limit):
         cost = 0
+        cycle_limit = self.__update_cycle_limit(cycle_limit, stage)
+        actions = self.__manager.get_specific_actor_actions_in_all_cycles_until_limit(actor_id, cycle_limit)
 
         for action in actions:
             cost += self.__increment_cost_with_linear_strategy(evaluate_action, action)
@@ -110,7 +105,7 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
 
             print actor_id + ": dirts delta cost: " + str(delta)
             cost += delta
-            # todo: remove unfair actions costs
+
         elif stage == 3:
             delta = 0
 
@@ -126,6 +121,16 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
 
         return r.EvaluationResult(cost, self.__mongo_vars.get_action_success_outcome_value(),
                                   evaluate_action.get_body_id(), self.__mongo_vars.get_action_outcomes_values())
+
+    def __update_cycle_limit(self, cycle_limit, stage):
+        if stage != 2:
+            return cycle_limit
+        else:
+            for i in range(cycle_limit + 1):
+                if self.__manager.get_dirts_number_at_cycle(i) == 0:
+                    return i
+
+            return cycle_limit
 
     def __increment_cost_with_linear_strategy(self, evaluate_action, action):
         if action[self.__mongo_vars.get_aggregations_action_key()][self.__mongo_vars.get_actions_report_action_name_key()] in self.__eval_vars.get_physical_actions():

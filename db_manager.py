@@ -467,7 +467,21 @@ class DBManager:
 
         results = self.__states_collection.aggregate(
             pipeline=[
-                {"$match": {"cycle": cycle}}, {"$unwind": "$locations"}, {"$match": {"locations.dirt": {"$exists": True}}}
+                {
+                    "$match": {
+                        "cycle": cycle
+                    }
+                },
+                {
+                    "$unwind": "$locations"
+                },
+                {
+                    "$match": {
+                        "locations.dirt": {
+                            "$exists": True
+                        }
+                    }
+                }
             ]
         )
 

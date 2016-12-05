@@ -47,7 +47,7 @@ def __create_universe(bodies, mongo_vars, eval_vars):
 
 def __create_strategy(eval_vars):
     return {
-        eval_vars.get_actor_to_evaluate_key(): 0,
+        eval_vars.get_actor_to_evaluate_key(): "foobar",
         eval_vars.get_strategy_name_key(): eval_vars.get_linear_strategy_name(),
         eval_vars.get_successful_ph_cost_key(): eval_vars.get_successful_ph_cost(),
         eval_vars.get_impossible_ph_cost_key(): eval_vars.get_impossible_ph_cost(),
@@ -69,6 +69,12 @@ def __parse_arguments():
                         action='store',
                         help='JSON configuration file')
 
+    parser.add_argument('-a', '--actor-to-evaluate',
+                        required=True,
+                        metavar='<actor-to-evaluate>', type=str,
+                        action='store',
+                        help='Actor to evaluate')
+
     parser.add_argument('-u', '--upper-bound',
                         required=True,
                         metavar='<cycles-upper-limit>', type=int,
@@ -84,47 +90,43 @@ def __parse_arguments():
     return parser.parse_args()
 
 
-def __start_system(mongo_vars, eval_vars, cycle_limit, stage):
+def __start_system(mongo_vars, eval_vars, actor_id, cycle_limit, stage):
     mind = __create_evaluator(mongo_vars, eval_vars)
     strategy = __create_strategy(eval_vars)
 
     # todo remove hardcoded keys
+    strategy[eval_vars.get_actor_to_evaluate_key()] = actor_id
     strategy["stage"] = stage
     strategy["cycle_limit"] = cycle_limit
 
-    # first cycle, no perceive, first actor evaluation
+    # first cycle, no perceive, actor evaluation
     action = mind.decide(**strategy)
     mind.execute(action)
 
-    # next cycle, second actor evaluation
+    # next cycle, the score is within the result, so mind.perceive() must be called.
     mind.perceive()
     strategy[eval_vars.get_actor_to_evaluate_key()] += 1
-    print "First actor score: " + str(mind.get_last_action_result().get_score())
-    action = mind.decide(**strategy)
-    mind.execute(action)
-
-    # next cycle, only perceive
-    mind.perceive()
-    print "Second actor score: " + str(mind.get_last_action_result().get_score())
+    print "Actor final score: " + str(mind.get_last_action_result().get_score())
 
 
-def __run_system(config_file, cycle_limit, stage):
+def __run_system(config_file, actor_id, cycle_limit, stage):
     mongo_vars, eval_vars = jp.parse(config_file)
 
     if mongo_vars == {} or eval_vars == {}:
         print "Error in parsing configuration from JSON file!"
         print "Bye!!!"
     else:
-        __start_system(mongo_vars, eval_vars, cycle_limit, stage)
+        __start_system(mongo_vars, eval_vars, actor_id, cycle_limit, stage)
 
 
 def main():
     args = __parse_arguments()
     config_file = args.config_file
+    actor_id = args.actor_to_evaluate
     cycle_limit = args.upper_bound
     stage = args.stage
 
-    __run_system(config_file, cycle_limit, stage)
+    __run_system(config_file, actor_id, cycle_limit, stage)
 
 
 if __name__ == "__main__":
