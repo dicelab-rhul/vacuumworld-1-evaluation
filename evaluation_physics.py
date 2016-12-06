@@ -63,10 +63,11 @@ class EvaluationPhysics(coe.CustomObservable, cor.CustomObserver, pi.AbstractPhy
         actors = self.__manager.get_actors_names()
         actor_id = evaluate_action.get_kwargs()[self.__eval_vars.get_actor_to_evaluate_key()]
 
-        if actor_id not in actors:
-            raise ValueError()
+        for actor in actors:
+            if actor_id in actor:
+                return self.__do_actual_evaluation(evaluate_action, actor)
 
-        return self.__do_actual_evaluation(evaluate_action, actor_id)
+        raise ValueError("Non existent actor id: " + actor_id)
 
     def __do_actual_evaluation(self, evaluate_action, actor_id):
         cycle_limit = evaluate_action.get_kwargs()["cycle_limit"]

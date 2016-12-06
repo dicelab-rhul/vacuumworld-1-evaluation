@@ -105,8 +105,14 @@ def __start_system(mongo_vars, eval_vars, actor_id, cycle_limit, stage):
 
     # next cycle, the score is within the result, so mind.perceive() must be called.
     mind.perceive()
-    strategy[eval_vars.get_actor_to_evaluate_key()] += 1
-    print "Actor final score: " + str(mind.get_last_action_result().get_score())
+
+    score = str(mind.get_last_action_result().get_score())
+
+    print "Actor final score: " + score
+
+    result = open("students/" + actor_id + "/results.txt", "a")  # todo change hardcoded path
+    result.write(score + "\n")
+    result.close()
 
 
 def __run_system(config_file, actor_id, cycle_limit, stage):

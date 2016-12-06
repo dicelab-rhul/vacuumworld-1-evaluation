@@ -115,12 +115,16 @@ def __generate_cleaning_test_cases_with_or_without_user(sizes, agent_id, user, s
         for loc in fellow_agents_locations:
             notable_locations.append(loc)
 
+        counter = 0
+
         for loc in dirt_locations:
             if [loc["x"], loc["y"]] in [[1, 1], [1, 2], [2, 2]]:
                 continue  # we do not add dirt to locations with agents on.
             else:
+                counter += 1
                 notable_locations.append(loc)
 
+        initial_state.update({"dirts_number": counter})
         initial_state.update({"notable_locations": notable_locations})
 
         output = open(os.path.join(student_dir, "test-" + str(test_number) + ".json"), "w")
