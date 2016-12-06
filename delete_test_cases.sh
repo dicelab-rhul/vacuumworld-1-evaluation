@@ -1,1 +1,3 @@
-/home/cloudstrife9999/vacuumworldenvironment/vacuumworld/delete_test_cases.sh
+#!/bin/bash
+
+rm -rf students
